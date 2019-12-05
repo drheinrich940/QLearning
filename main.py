@@ -29,6 +29,34 @@ def tuple_to_key(position_tuple):
     return lookup_table[position_tuple[0], position_tuple[1], position_tuple[2]]
 
 
+def cumpute_q(selected_direction, next_position):
+    '''
+    Q(s,a) = (1- alpha(t))Q(s,a) + alpha(r + alpha * Qmax (S',a)
+    Qmax (S',a) : We take max value for state and action for the next action
+    :param next_position:
+    :param next_position_reward:
+    :return:
+    '''
+    actual_q = 0.0
+    eq_first_part = (1 - ALPHA) * (
+        state_action_dictionary[lookup_table[current_position[0], current_position[1], selected_direction]] if
+        lookup_table[current_position[0], current_position[
+            1], selected_direction] in state_action_dictionary else EXPLORATION_CONST)
+
+    # Finding Qmax
+    q_max = 0.0
+    for i in range(3):
+        q_max_temp = (
+            state_action_dictionary[lookup_table[next_position[0], next_position[1], i]] if
+            lookup_table[next_position[0], next_position[
+                1], i] in state_action_dictionary else EXPLORATION_CONST)
+        if q_max_temp > q_max:
+            q_max = q_max_temp
+
+    eq_second_part = ALPHA * (game_map[next_position[0], next_position[1]] + ALPHA * q_max)
+    return eq_first_part + eq_second_part
+
+
 def set_game_map():
     local_game_map = np.zeros((6, 6))
     local_game_map = local_game_map - 1
@@ -86,26 +114,45 @@ def convert_direction_to_position(direction):
 
 
 def make_move():
+    global state_action_dictionary
     global current_position
     global reward
     global game_map
+    global lookup_table
+    local_reward = 0.0
     selected_direction = pick_direction(current_position)
     action_list.append(list(current_position) + [selected_direction])
+    next_position = 0
     if current_position[0] == 5 and selected_direction == 2:
         reward = reward - 10
+        local_reward = - 10
+        next_position = current_position
     elif current_position[1] == 5 and selected_direction == 1:
         reward = reward - 10
+        local_reward = - 10
+        next_position = current_position
     elif current_position[0] == 0 and selected_direction == 0:
         reward = reward - 10
+        local_reward = - 10
+        next_position = current_position
     elif current_position[1] == 0 and selected_direction == 3:
         reward = reward - 10
+        local_reward = - 10
+        next_position = current_position
     else:
         next_position = convert_direction_to_position(selected_direction)
         if game_map[next_position[0], next_position[1]] == -10:
             reward = reward - 10
+            local_reward = - 10
+            next_position = current_position
         else:
             current_position = next_position
             reward = reward + game_map[current_position[0], current_position[1]]
+            local_reward = game_map[current_position[0], current_position[1]]
+    current_q = cumpute_q(selected_direction, next_position)
+    # Learning
+    i = lookup_table[current_position[0], current_position[1], [selected_direction]][0]
+    state_action_dictionary[i] = current_q
 
 
 def update_dict():
@@ -151,7 +198,7 @@ def run_epoch():
     for i in range(0, STEP_PER_EPOCH):
         make_move()
         draw_world(current_position, i)
-    update_dict()
+    # update_dict()
     print_state_action_dictionary()
 
 
