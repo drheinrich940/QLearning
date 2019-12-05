@@ -5,10 +5,10 @@ import random
 # TODO change learning formula, learning is made each move
 seed(1)
 
-ALPHA = 0
+ALPHA = 0.1
 GAMMA = 0  # Discount Factor
 STEP_PER_EPOCH = 100
-EPOCH = 1000
+EPOCH = 10
 EXPLORATION_CONST = 0
 
 state_action_dictionary = {}
@@ -29,7 +29,7 @@ def tuple_to_key(position_tuple):
     return lookup_table[position_tuple[0], position_tuple[1], position_tuple[2]]
 
 
-def cumpute_q(selected_direction, next_position):
+def compute_q(selected_direction, next_position):
     '''
     Q(s,a) = (1- alpha(t))Q(s,a) + alpha(r + alpha * Qmax (S',a)
     Qmax (S',a) : We take max value for state and action for the next action
@@ -59,7 +59,7 @@ def cumpute_q(selected_direction, next_position):
 
 def set_game_map():
     local_game_map = np.zeros((6, 6))
-    local_game_map = local_game_map - 1
+    # local_game_map = local_game_map - 1
     local_game_map[0, 5] = 1000
     local_game_map[1, 0] = 50
     local_game_map[3, 2] = -10
@@ -149,7 +149,7 @@ def make_move():
             current_position = next_position
             reward = reward + game_map[current_position[0], current_position[1]]
             local_reward = game_map[current_position[0], current_position[1]]
-    current_q = cumpute_q(selected_direction, next_position)
+    current_q = compute_q(selected_direction, next_position)
     # Learning
     i = lookup_table[current_position[0], current_position[1], [selected_direction]][0]
     state_action_dictionary[i] = current_q
@@ -173,7 +173,7 @@ def update_dict():
 
 def draw_world(actual_current_position, current_step):
     copy_map = game_map.copy()
-    copy_map[actual_current_position[0], actual_current_position[1]] = 8
+    copy_map[actual_current_position[0], actual_current_position[1]] = 7
     print("current_step = ", current_step)
     print(copy_map)
     print("reward = ", reward)
