@@ -12,6 +12,8 @@ GAMMA = 0.8  # Discount Factor
 STEP_PER_EPOCH = 100
 EPOCH = 100
 EXPLORATION_CONST = 0
+CHANCE_TO_EXPLORE_MAX = 0.9
+CHANCE_TO_EXPLORE = CHANCE_TO_EXPLORE_MAX
 
 state_action_dictionary = {}
 action_list = []
@@ -77,28 +79,33 @@ def q_max_func(previous_state_action_value):
 
 def pick_direction(state):
     """
+    Random chance to take a random direction to add exploration at the beginning
     Pick a direction based on previous learning, if all the direction are equals in value take a random direction
     :param state:
     :return:
     """
     global state_action_dictionary
-    upper_val = state_action_dictionary[lookup_table[state[0], state[1], 0]] if lookup_table[state[0], state[
-        1], 0] in state_action_dictionary else EXPLORATION_CONST
-    right_val = state_action_dictionary[lookup_table[state[0], state[1], 1]] if lookup_table[state[0], state[
-        1], 1] in state_action_dictionary else EXPLORATION_CONST
-    lower_val = state_action_dictionary[lookup_table[state[0], state[1], 2]] if lookup_table[state[0], state[
-        1], 2] in state_action_dictionary else EXPLORATION_CONST
-    left_val = state_action_dictionary[lookup_table[state[0], state[1], 3]] if lookup_table[state[0], state[
-        1], 3] in state_action_dictionary else EXPLORATION_CONST
+    global CHANCE_TO_EXPLORE
+    if random.uniform(0, 1) > CHANCE_TO_EXPLORE:
+        upper_val = state_action_dictionary[lookup_table[state[0], state[1], 0]] if lookup_table[state[0], state[
+            1], 0] in state_action_dictionary else EXPLORATION_CONST
+        right_val = state_action_dictionary[lookup_table[state[0], state[1], 1]] if lookup_table[state[0], state[
+            1], 1] in state_action_dictionary else EXPLORATION_CONST
+        lower_val = state_action_dictionary[lookup_table[state[0], state[1], 2]] if lookup_table[state[0], state[
+            1], 2] in state_action_dictionary else EXPLORATION_CONST
+        left_val = state_action_dictionary[lookup_table[state[0], state[1], 3]] if lookup_table[state[0], state[
+            1], 3] in state_action_dictionary else EXPLORATION_CONST
 
-    if left_val > right_val and left_val > upper_val and left_val > lower_val:
-        return 3
-    if left_val < right_val and right_val > upper_val and right_val > lower_val:
-        return 1
-    if upper_val > left_val and right_val < upper_val and upper_val > lower_val:
-        return 0
-    if lower_val > left_val and right_val < lower_val and lower_val > upper_val:
-        return 2
+        if left_val > right_val and left_val > upper_val and left_val > lower_val:
+            return 3
+        if left_val < right_val and right_val > upper_val and right_val > lower_val:
+            return 1
+        if upper_val > left_val and right_val < upper_val and upper_val > lower_val:
+            return 0
+        if lower_val > left_val and right_val < lower_val and lower_val > upper_val:
+            return 2
+        else:
+            return random.randint(0, 3)
     else:
         return random.randint(0, 3)
 
@@ -196,7 +203,13 @@ def print_state_action_dictionary():
               state_action_dictionary[key])
 
 
-def run_epoch():
+def run_epoch(number_of_current_epoch):
+    """
+    Run a single epoch
+    Decrease the chance to take random decision at each epoch
+    Last epoch should have near 0% chance of taking random decisions
+    """
+    global CHANCE_TO_EXPLORE
     global action_list
     global reward
     global current_position
@@ -208,6 +221,8 @@ def run_epoch():
         draw_world(current_position, i)
     # update_dict()
     print_state_action_dictionary()
+    CHANCE_TO_EXPLORE = CHANCE_TO_EXPLORE_MAX * ((EPOCH - number_of_current_epoch) / EPOCH)
+    print('Chance to explore : ', CHANCE_TO_EXPLORE)
 
 
 def run_sim():
@@ -215,7 +230,7 @@ def run_sim():
     game_map = set_game_map()
     for i in range(EPOCH):
         print("EPOCH = ", i)
-        run_epoch()
+        run_epoch(i)
     print(state_action_dictionary)
 
 
