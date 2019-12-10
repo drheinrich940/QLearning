@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 from random import seed
 import random
@@ -5,10 +7,10 @@ import random
 # TODO change learning formula, learning is made each move
 seed(1)
 
-ALPHA = 0.1
-GAMMA = 0  # Discount Factor
+ALPHA = 0.7
+GAMMA = 0.8  # Discount Factor
 STEP_PER_EPOCH = 100
-EPOCH = 10
+EPOCH = 100
 EXPLORATION_CONST = 0
 
 state_action_dictionary = {}
@@ -29,15 +31,14 @@ def tuple_to_key(position_tuple):
     return lookup_table[position_tuple[0], position_tuple[1], position_tuple[2]]
 
 
-def compute_q(selected_direction, next_position):
-    '''
+def compute_q(selected_direction, next_position, current_q):
+    """
     Q(s,a) = (1- alpha(t))Q(s,a) + alpha(r + alpha * Qmax (S',a)
     Qmax (S',a) : We take max value for state and action for the next action
+    :param selected_direction:
     :param next_position:
-    :param next_position_reward:
     :return:
-    '''
-    actual_q = 0.0
+    """
     eq_first_part = (1 - ALPHA) * (
         state_action_dictionary[lookup_table[current_position[0], current_position[1], selected_direction]] if
         lookup_table[current_position[0], current_position[
@@ -53,7 +54,7 @@ def compute_q(selected_direction, next_position):
         if q_max_temp > q_max:
             q_max = q_max_temp
 
-    eq_second_part = ALPHA * (game_map[next_position[0], next_position[1]] + ALPHA * q_max)
+    eq_second_part = ALPHA * (game_map[next_position[0], next_position[1]] + ALPHA * q_max - current_q)
     return eq_first_part + eq_second_part
 
 
@@ -75,11 +76,11 @@ def q_max_func(previous_state_action_value):
 
 
 def pick_direction(state):
-    '''
+    """
     Pick a direction based on previous learning, if all the direction are equals in value take a random direction
     :param state:
     :return:
-    '''
+    """
     global state_action_dictionary
     upper_val = state_action_dictionary[lookup_table[state[0], state[1], 0]] if lookup_table[state[0], state[
         1], 0] in state_action_dictionary else EXPLORATION_CONST
@@ -123,6 +124,7 @@ def make_move():
     selected_direction = pick_direction(current_position)
     action_list.append(list(current_position) + [selected_direction])
     next_position = 0
+    current_position_copy = deepcopy(current_position);
     if current_position[0] == 5 and selected_direction == 2:
         reward = reward - 10
         local_reward = - 10
@@ -149,9 +151,15 @@ def make_move():
             current_position = next_position
             reward = reward + game_map[current_position[0], current_position[1]]
             local_reward = game_map[current_position[0], current_position[1]]
-    current_q = compute_q(selected_direction, next_position)
+
     # Learning
-    i = lookup_table[current_position[0], current_position[1], [selected_direction]][0]
+    # i = lookup_table[current_position[0], current_position[1], [selected_direction]][0]
+    i = lookup_table[current_position_copy[0], current_position_copy[1], [selected_direction]][0]
+
+    if i in state_action_dictionary:
+        current_q = compute_q(selected_direction, next_position, state_action_dictionary[i])
+    else:
+        current_q = compute_q(selected_direction, next_position, 0)
     state_action_dictionary[i] = current_q
 
 
