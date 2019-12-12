@@ -43,6 +43,19 @@ def set_game_map():
     return local_game_map
 
 
+def compute_distance_game_map(current_game_map):
+    """
+    Compute new reward for each tile based on the opposite of the distance from both points
+    :param current_game_map:
+    :return: new weighted map
+    """
+    local_game_map = current_game_map.copy()
+    for y in range(local_game_map.shape[0]):
+        for x in range(local_game_map.shape[1]):
+            local_game_map[y, x] = local_game_map[y, x] + 1 / (abs(x - 5) + y + x + abs(y - 1))
+    return local_game_map
+
+
 def tuple_to_key(position_tuple):
     return lookup_table[position_tuple[0], position_tuple[1], position_tuple[2]]
 
@@ -189,7 +202,6 @@ def draw_world(actual_current_position, current_step):
 def print_state_action_dictionary():
     global state_action_dictionary
     global lookup_table
-    print('Q table :   \t[Y] [X] [Action]')
     for key in state_action_dictionary:
         index_in_array = np.where(lookup_table == key)
         print('Key : ', key, '\t', index_in_array[0], index_in_array[1], index_in_array[2], '\t Value : ',
@@ -221,6 +233,7 @@ def run_epoch(number_of_current_epoch):
 def run_sim():
     global game_map
     game_map = set_game_map()
+    game_map = compute_distance_game_map(game_map)
     for i in range(EPOCH):
         print("EPOCH = ", i)
         run_epoch(i)
